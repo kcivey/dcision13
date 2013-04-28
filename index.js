@@ -28,10 +28,13 @@ $.ajax({
             layer.bindPopup(getPopupHtml(feature));
         };
         layerOptions.style = function (feature) {
-            var winner = getWinner(feature.properties.votes);
+            var voteList = feature.properties.votes,
+                winner = getWinner(voteList),
+                total = getTotal(voteList),
+                majority = voteList[winner] / total > 0.5;
             return {
                 fillColor: colors[winner],
-                fillOpacity: 0.6,
+                fillOpacity: majority ? 0.8 : 0.6,
                 weight: 1,
                 color: 'white'
             };

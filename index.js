@@ -22,6 +22,7 @@ $.ajax({
     dataType: 'json',
     success: function (data) {
         var layerOptions = {},
+            layers = {},
             layer;
         layerOptions.onEachFeature = function (feature, layer) {
             layer.bindPopup(getPopupHtml(feature));
@@ -37,8 +38,28 @@ $.ajax({
         };
         layer = L.geoJson(data, layerOptions).addTo(map);
         map.fitBounds(layer.getBounds());
+        layers['Precinct winners'] = layer;
+        $.each(_.keys(colors), function (i, candidate) {
+            layerOptions.style = function (feature) {
+                var voteList = feature.properties.votes,
+                    total = getTotal(voteList);
+                return {
+                    fillColor: getGray(voteList[candidate] / total),
+                    fillOpacity: 1,
+                    weight: 1,
+                    color: 'white'
+                };
+            };
+            layers[candidate + ' support'] = L.geoJson(data, layerOptions);
+        });
+        L.control.layers(null, layers).addTo(map);
     }
 });
+
+function getGray(fraction) {
+    var hex = _.str.sprintf('%02x', Math.round(255 - 255 * fraction));
+    return '#' + _.str.repeat(hex, 3);
+}
 
 function getWinner(voteList) {
     var winner;

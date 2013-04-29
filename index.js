@@ -6,7 +6,10 @@ var colors = {
         Mara: '#0000aa',
         Silverman: '#aa0000'
     },
+    mapDiv = $('#map'),
     map = L.map('map');
+mapDiv.height($(window).height() - mapDiv.offset().top - 25)
+    .width($(window).width() - $('#sidebar').width);
 L.tileLayer(
     'http://{s}.tile.cloudmade.com/{key}/{style}/256/{z}/{x}/{y}.png',
     {
@@ -23,6 +26,7 @@ $.ajax({
     success: function (data) {
         var layerOptions = {},
             layers = {},
+            controlsDiv = $('#controls'),
             layer;
         layerOptions.onEachFeature = function (feature, layer) {
             layer.bindPopup(getPopupHtml(feature));
@@ -55,7 +59,40 @@ $.ajax({
             };
             layers[candidate + ' support'] = L.geoJson(data, layerOptions);
         });
-        L.control.layers(null, layers).addTo(map);
+        controlsDiv.append(
+            $.map(layers, function (layer, name) {
+                return '<label><input type="radio" name="layer" value="' +
+                    name + '"/> ' + name + '</label><br/>';
+            }),
+            '<label><input type="radio" name="layer" value="none"/> ' +
+                'No overlay</label>'
+        )
+        .on('click', 'input', function () {
+            var name = this.value;
+            $.each(layers, function (n, layer) {
+                if (map.hasLayer(layer)) {
+                    map.removeLayer(layer);
+                }
+            });
+            if (name != 'none') {
+                map.addLayer(layers[name]);
+            }
+            $('#explanation-1').toggle(name == 'Precinct winners');
+            $('#explanation-2').toggle(/ support$/.test(name));
+        })
+        .find('input').eq(0).prop('checked', true);
+        $('#legend-1').append(
+            $.map(colors, function (color, candidate) {
+                return '<div class="color-block" style="background-color: ' +
+                    color + ';"></div> ' + candidate + '<br/>';
+            })
+        );
+        $('#legend-2').append(
+            $.map(_.range(0, 6), function (i) {
+                return '<div class="color-block gray" style="background-color: ' +
+                    getGray(i / 5) + ';"></div> ' + i * 20 + '%<br/>';
+            })
+        );
     }
 });
 

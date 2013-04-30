@@ -36,8 +36,8 @@ $.ajax({
         layerOptions.style = layerStyles['Precinct winners'] =
             function (feature) {
                 var voteList = feature.properties.votes,
-                    winner = getWinner(voteList),
-                    total = getTotal(voteList),
+                    winner = getWinner(feature),
+                    total = getTotal(feature),
                     majority = voteList[winner] / total > 0.5;
                 return {
                     fillColor: colors[winner],
@@ -52,7 +52,7 @@ $.ajax({
         $.each(_.keys(colors), function (i, candidate) {
             layerStyles[candidate + ' %'] = function (feature) {
                 var voteList = feature.properties.votes,
-                    total = getTotal(voteList);
+                    total = getTotal(feature);
                 return {
                     fillColor: getGray(voteList[candidate] / total),
                     fillOpacity: 1,
@@ -71,8 +71,7 @@ $.ajax({
             };
         });
         layerStyles['Where the votes were'] = function (feature) {
-            var voteList = feature.properties.votes,
-                total = getTotal(voteList);
+            var total = getTotal(feature);
             return {
                 fillColor: getGray(total / voteScaleMax),
                 fillOpacity: 1,
@@ -145,25 +144,36 @@ function getGray(fraction) {
     return '#' + _.str.repeat(hex, 3);
 }
 
-function getWinner(voteList) {
-    var winner;
-    $.each(voteList, function (candidate, votes) {
-        if (!winner || votes > voteList[winner]) {
-            winner = candidate;
-        }
-    });
-    return winner;
+function getWinner(feature) {
+    var voteList = feature.properties.votes,
+        winner;
+    if (!feature.properties.winner) {
+        $.each(voteList, function (candidate, votes) {
+            if (!winner || votes > voteList[winner]) {
+                winner = candidate;
+            }
+        });
+        feature.properties.winner = winner;
+    }
+    return feature.properties.winner;
 }
 
-function getTotal(voteList) {
-    return _.reduce(_.values(voteList), function(memo, num){ return memo + num; }, 0);
+function getTotal(feature) {
+    if (!feature.properties.total) {
+        feature.properties.total = _.reduce(
+            _.values(feature.properties.votes),
+            function(memo, num){ return memo + num; },
+            0
+        );
+    }
+    return feature.properties.total;
 }
 
 function getPopupHtml(feature) {
     var id = feature.id,
         voteList = _.clone(feature.properties.votes),
-        winner = getWinner(voteList),
-        total = getTotal(voteList),
+        winner = getWinner(feature),
+        total = getTotal(feature),
         candidates = _.keys(voteList).sort(),
         precinctNumber = id.replace('pct', ''),
         html = '<h4>Precinct ' + precinctNumber +

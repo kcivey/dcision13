@@ -8,7 +8,7 @@ var colors = {
     },
     mapDiv = $('#map'),
     map = L.map('map');
-mapDiv.height($(window).height() - mapDiv.offset().top)
+mapDiv.height($(window).height() - mapDiv.offset().top - $('#credits').height() - 5)
     .width($(window).width() - $('#sidebar').width);
 L.tileLayer(
     'http://{s}.tile.cloudmade.com/{key}/{style}/256/{z}/{x}/{y}.png',

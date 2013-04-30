@@ -27,6 +27,7 @@ $.ajax({
         var layerOptions = {},
             layers = {},
             controlsDiv = $('#controls'),
+            voteScaleMax = 1000,
             layer;
         layerOptions.onEachFeature = function (feature, layer) {
             layer.bindPopup(getPopupHtml(feature));
@@ -57,8 +58,29 @@ $.ajax({
                     color: 'white'
                 };
             };
-            layers[candidate + ' support'] = L.geoJson(data, layerOptions);
+            layers[candidate + ' %'] = L.geoJson(data, layerOptions);
+            layerOptions.style = function (feature) {
+                var voteList = feature.properties.votes;
+                return {
+                    fillColor: getGray(voteList[candidate] / voteScaleMax),
+                    fillOpacity: 1,
+                    weight: 1,
+                    color: 'white'
+                };
+            };
+            layers[candidate + ' votes'] = L.geoJson(data, layerOptions);
         });
+        layerOptions.style = function (feature) {
+            var voteList = feature.properties.votes,
+                total = getTotal(voteList);
+            return {
+                fillColor: getGray(total / voteScaleMax),
+                fillOpacity: 1,
+                weight: 1,
+                color: 'white'
+            };
+        };
+        layers['Where the votes were'] = L.geoJson(data, layerOptions);
         controlsDiv.append(
             $.map(layers, function (layer, name) {
                 return '<label><input type="radio" name="layer" value="' +
@@ -78,7 +100,9 @@ $.ajax({
                 map.addLayer(layers[name]);
             }
             $('#explanation-1').toggle(name == 'Precinct winners');
-            $('#explanation-2').toggle(/ support$/.test(name));
+            $('#explanation-2').toggle(/ %$/.test(name));
+            $('#explanation-3').toggle(/ votes$/.test(name));
+            $('#explanation-4').toggle(/^Where/.test(name));
         })
         .find('input').eq(0).prop('checked', true);
         $('#legend-1').append(
@@ -93,11 +117,27 @@ $.ajax({
                     getGray(i / 5) + ';"></div> ' + i * 20 + '%<br/>';
             })
         );
+        $('#legend-3').append(
+            $.map(_.range(0, 6), function (i) {
+                return '<div class="color-block gray" style="background-color: ' +
+                    getGray(i / 5) + ';"></div> ' +
+                    _.str.numberFormat(Math.round(i * voteScaleMax / 5)) +
+                    (i == 5 ? '+' : '') + ' votes<br/>';
+            })
+        );
+        $('#legend-4').append($('#legend-3').html());
     }
 });
 
 function getGray(fraction) {
-    var hex = _.str.sprintf('%02x', Math.round(255 - 255 * fraction));
+    var hex;
+    if (fraction < 0) {
+        fraction = 0;
+    }
+    else if (fraction > 1) {
+        fraction = 1;
+    }
+    hex = _.str.sprintf('%02x', Math.round(255 - 255 * fraction));
     return '#' + _.str.repeat(hex, 3);
 }
 

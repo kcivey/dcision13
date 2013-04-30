@@ -29,6 +29,7 @@ $.ajax({
             layerStyles = {},
             controlsDiv = $('#controls'),
             voteScaleMax = 1000,
+            topPrecincts = {},
             currentLayer;
         layerOptions.onEachFeature = function (feature, layer) {
             layer.bindPopup(getPopupHtml(feature));
@@ -65,6 +66,17 @@ $.ajax({
                 return {
                     fillColor: getGray(voteList[candidate] / voteScaleMax),
                     fillOpacity: 1,
+                    weight: 1,
+                    color: 'white'
+                };
+            };
+            topPrecincts[candidate] = $.map(_.sortBy(data.features, function (feature) {
+                return feature.properties.votes[candidate];
+            }).reverse().slice(0, 20), function (feature) { return feature.id; });
+            layerStyles[candidate + ' top 20 precincts'] = function (feature) {
+                return {
+                    fillColor: colors[candidate],
+                    fillOpacity: $.inArray(feature.id, topPrecincts[candidate]) > -1 ? 1 : 0,
                     weight: 1,
                     color: 'white'
                 };
@@ -106,6 +118,7 @@ $.ajax({
             $('#explanation-2').toggle(/ %$/.test(name));
             $('#explanation-3').toggle(/ votes$/.test(name));
             $('#explanation-4').toggle(/^Where/.test(name));
+            $('#explanation-5').toggle(/ precincts$/.test(name));
         })
         .find('input').eq(0).prop('checked', true);
         $('#legend-1').append(

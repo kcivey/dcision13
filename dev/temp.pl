@@ -8,7 +8,6 @@ chomp;
 my %v;
 my %ward;
 my @columns = map { chomp; s/["\r\n]//g; lc } split /,/;
-my(%max, %min);
 while (<>) {
     s/\s+$//;
     s/^"//; s/"$//;
@@ -25,15 +24,27 @@ while (<>) {
             " and $r{ward}\n";
     }
     $ward{$r{precinct_number}} = $r{ward};
-    if (!exists $min{$key2} or $min{$key2} > $r{votes}) {
-        $min{$key2} = $r{votes};
-    }
-    if (!exists $max{$key2} or $max{$key2} < $r{votes}) {
-        $max{$key2} = $r{votes};
-    }
-    $v{$key1}{$key2} = $r{votes} + 0;
+    $v{$key2}{$key1} = $r{votes} + 0;
 }
-#use Data::Dumper; print Dumper \%max, \%min;
+
+for my $candidate (sort keys %v) {
+    print "$candidate\n";
+    my %v2 = %{$v{$candidate}};
+    my $i = 0;
+    my $subtotal = 0;
+    my $total = 0;
+    for my $pct (sort { $v2{$b} <=> $v2{$a} || $a <=> $b } keys %v2) {
+        ++$i;
+        if ($i <= 20) {
+            printf " %3d. Pct %3d: %4d\n", $i, $pct, $v2{$pct};
+            $subtotal += $v2{$pct};
+        }
+        $total += $v2{$pct};
+    }
+    printf "TOTAL %d / %d = %.1f%%\n\n", $subtotal, $total,
+        100 * $subtotal / $total;
+}
+exit;
 
 my %c;
 for my $pct (keys %v) {

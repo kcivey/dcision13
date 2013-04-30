@@ -26,29 +26,31 @@ $.ajax({
     success: function (data) {
         var layerOptions = {},
             layers = {},
+            layerStyles = {},
             controlsDiv = $('#controls'),
             voteScaleMax = 1000,
-            layer;
+            currentLayer;
         layerOptions.onEachFeature = function (feature, layer) {
             layer.bindPopup(getPopupHtml(feature));
         };
-        layerOptions.style = function (feature) {
-            var voteList = feature.properties.votes,
-                winner = getWinner(voteList),
-                total = getTotal(voteList),
-                majority = voteList[winner] / total > 0.5;
-            return {
-                fillColor: colors[winner],
-                fillOpacity: majority ? 0.8 : 0.6,
-                weight: 1,
-                color: 'white'
+        layerOptions.style = layerStyles['Precinct winners'] =
+            function (feature) {
+                var voteList = feature.properties.votes,
+                    winner = getWinner(voteList),
+                    total = getTotal(voteList),
+                    majority = voteList[winner] / total > 0.5;
+                return {
+                    fillColor: colors[winner],
+                    fillOpacity: majority ? 0.8 : 0.6,
+                    weight: 1,
+                    color: 'white'
+                };
             };
-        };
-        layer = L.geoJson(data, layerOptions).addTo(map);
-        map.fitBounds(layer.getBounds());
-        layers['Precinct winners'] = layer;
+        currentLayer = layers['Precinct winners'] =
+            L.geoJson(data, layerOptions).addTo(map);
+        map.fitBounds(currentLayer.getBounds());
         $.each(_.keys(colors), function (i, candidate) {
-            layerOptions.style = function (feature) {
+            layerStyles[candidate + ' %'] = function (feature) {
                 var voteList = feature.properties.votes,
                     total = getTotal(voteList);
                 return {
@@ -58,8 +60,7 @@ $.ajax({
                     color: 'white'
                 };
             };
-            layers[candidate + ' %'] = L.geoJson(data, layerOptions);
-            layerOptions.style = function (feature) {
+            layerStyles[candidate + ' votes'] = function (feature) {
                 var voteList = feature.properties.votes;
                 return {
                     fillColor: getGray(voteList[candidate] / voteScaleMax),
@@ -68,9 +69,8 @@ $.ajax({
                     color: 'white'
                 };
             };
-            layers[candidate + ' votes'] = L.geoJson(data, layerOptions);
         });
-        layerOptions.style = function (feature) {
+        layerStyles['Where the votes were'] = function (feature) {
             var voteList = feature.properties.votes,
                 total = getTotal(voteList);
             return {
@@ -80,9 +80,8 @@ $.ajax({
                 color: 'white'
             };
         };
-        layers['Where the votes were'] = L.geoJson(data, layerOptions);
         controlsDiv.append(
-            $.map(layers, function (layer, name) {
+            $.map(layerStyles, function (style, name) {
                 return '<label><input type="radio" name="layer" value="' +
                     name + '"/> ' + name + '</label><br/>';
             }),
@@ -91,13 +90,18 @@ $.ajax({
         )
         .on('click', 'input', function () {
             var name = this.value;
-            $.each(layers, function (n, layer) {
-                if (map.hasLayer(layer)) {
-                    map.removeLayer(layer);
+            if (currentLayer) {
+                map.removeLayer(currentLayer);
+            }
+            if (name == 'none') {
+                currentLayer = null;
+            }
+            else {
+                if (!layers[name]) {
+                    layerOptions.style = layerStyles[name];
+                    layers[name] = L.geoJson(data, layerOptions);
                 }
-            });
-            if (name != 'none') {
-                map.addLayer(layers[name]);
+                currentLayer = layers[name].addTo(map);
             }
             $('#explanation-1').toggle(name == 'Precinct winners');
             $('#explanation-2').toggle(/ %$/.test(name));

@@ -27,16 +27,19 @@ while (<>) {
     $v{$key2}{$key1} = $r{votes} + 0;
 }
 
-for my $candidate (sort keys %v) {
+#for my $candidate (sort keys %v) {
+for my $candidate ('Silverman') {
     print "$candidate\n";
     my %v2 = %{$v{$candidate}};
     my $i = 0;
     my $subtotal = 0;
     my $total = 0;
-    for my $pct (sort { $v2{$b} <=> $v2{$a} || $a <=> $b } keys %v2) {
+    #for my $pct (sort { $v2{$b} <=> $v2{$a} || $a <=> $b } keys %v2) {
+    for my $pct (sort { $a <=> $b } keys %v2) {
         ++$i;
-        if ($i <= 20) {
-            printf " %3d. Pct %3d: %4d\n", $i, $pct, $v2{$pct};
+        if ($i <= 200) {
+            #printf " %3d. Pct %3d: %4d\n", $i, $pct, $v2{$pct};
+            printf "%4d\n", $v2{$pct};
             $subtotal += $v2{$pct};
         }
         $total += $v2{$pct};

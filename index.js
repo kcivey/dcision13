@@ -11,12 +11,11 @@ var colors = {
 mapDiv.height($(window).height() - mapDiv.offset().top - $('#credits').height() - 5)
     .width($(window).width() - $('#sidebar').width);
 L.tileLayer(
-    'http://{s}.tile.cloudmade.com/{key}/{style}/256/{z}/{x}/{y}.png',
+    '//{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
     {
-        key: '0c1c82bc050546ed93950f730c5a9366',
-        style: 998,
-        attribution: 'Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, Imagery © <a href="http://cloudmade.com">CloudMade</a>',
-        maxZoom: 18
+        attribution: 'Map data Â© <a href="//openstreetmap.org">OpenStreetMap</a> contributors',
+        maxZoom: 18,
+        opacity: 0.5
     }
 ).addTo(map);
 
